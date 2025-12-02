@@ -15,13 +15,63 @@ export default function NewProjectPage() {
     construction_time: "",
   });
 
+  const [images, setImages] = useState<File[]>([]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Chọn tối đa 3 ảnh
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const selected = Array.from(files);
+
+    if (selected.length + images.length > 3) {
+      alert("Chỉ được upload tối đa 3 ảnh");
+      return;
+    }
+
+    setImages([...images, ...selected]);
+  };
+
+  // Upload 1 ảnh lên Cloudinary
+  const uploadImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "unsigned_preset");
+
+    const res = await fetch(
+      "https://api.cloudinary.com/v1_1/dhmr88vva/image/upload",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await res.json();
+    return data.secure_url;
+  };
+
+  // Submit form
   const handleSubmit = async () => {
-    await createProject(form);
+    // Upload từng ảnh
+    const imageUrls = [];
+    for (const img of images) {
+      const url = await uploadImage(img);
+      imageUrls.push(url);
+    }
+
+    // Gửi toàn bộ form + ảnh
+    await createProject({
+      ...form,
+      images: imageUrls,
+    });
+
     alert("Thêm dự án thành công!");
+
+    // Reset form
     setForm({
       name: "",
       investor: "",
@@ -30,6 +80,7 @@ export default function NewProjectPage() {
       end_date: "",
       construction_time: "",
     });
+    setImages([]);
   };
 
   return (
@@ -41,6 +92,7 @@ export default function NewProjectPage() {
           <Button variant="contained">Danh sách dự án</Button>
         </Link>
       </Box>
+
       <Box>
         <TextField
           margin="normal"
@@ -89,6 +141,27 @@ export default function NewProjectPage() {
           onChange={handleChange}
           type="number"
         />
+
+        {/* Input chọn ảnh */}
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={handleImageChange}
+          style={{ marginTop: 16 }}
+        />
+
+        {/* Preview ảnh */}
+        <Box display="flex" gap={2} mt={2}>
+          {images.map((img, i) => (
+            <img
+              key={i}
+              src={URL.createObjectURL(img)}
+              width={100}
+              style={{ borderRadius: 8 }}
+            />
+          ))}
+        </Box>
 
         <Button
           variant="contained"
