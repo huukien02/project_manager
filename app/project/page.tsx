@@ -36,6 +36,20 @@ export default function ProjectListPage() {
     setProjects((prev: any) => prev.filter((p: any) => p.id !== id));
   };
 
+  const isLoss = (p: any) => {
+    const totalPayments =
+      p.payments?.reduce(
+        (sum: number, item: any) => sum + Number(item.amount),
+        0
+      ) || 0;
+    const totalAdvance =
+      p.advance_payments?.reduce(
+        (sum: number, item: any) => sum + Number(item.amount),
+        0
+      ) || 0;
+    return totalPayments - totalAdvance < 0; // true nếu lỗ
+  };
+
   return (
     <Box maxWidth={900} mx="auto" mt={4}>
       <Box display="flex" justifyContent="space-between" mb={3}>
@@ -72,34 +86,39 @@ export default function ProjectListPage() {
           </TableHead>
 
           <TableBody>
-            {projects.map((p: any) => (
-              <TableRow key={p.id}>
-                <TableCell>{p.name}</TableCell>
-                <TableCell>{p.investor}</TableCell>
-                <TableCell>{p.address}</TableCell>
-                <TableCell>{p.start_date}</TableCell>
-                <TableCell>{p.end_date}</TableCell>
-
-                <TableCell>
-                  <Box display="flex" gap={1}>
-                    <Link href={`/project/${p.id}`}>
-                      <Button variant="outlined" size="small">
-                        Sửa
+            {projects.map((p: any) => {
+              const loss = isLoss(p);
+              return (
+                <TableRow key={p.id}>
+                  <TableCell
+                    sx={{ backgroundColor: loss ? "red" : "green", fontWeight: "bold" }}
+                  >
+                    {p.name}
+                  </TableCell>
+                  <TableCell>{p.investor}</TableCell>
+                  <TableCell>{p.address}</TableCell>
+                  <TableCell>{p.start_date}</TableCell>
+                  <TableCell>{p.end_date}</TableCell>
+                  <TableCell>
+                    <Box display="flex" gap={1}>
+                      <Link href={`/project/${p.id}`}>
+                        <Button variant="outlined" size="small">
+                          Sửa
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        onClick={() => handleDelete(p.id)}
+                      >
+                        Xóa
                       </Button>
-                    </Link>
-
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      onClick={() => handleDelete(p.id)}
-                    >
-                      Xóa
-                    </Button>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
 
             {projects.length === 0 && (
               <TableRow>
