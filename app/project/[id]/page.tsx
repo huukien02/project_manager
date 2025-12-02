@@ -14,6 +14,8 @@ import { updateProject } from "@/lib/updateProject";
 import Link from "next/link";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { IconButton } from "@mui/material";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 export default function EditProjectPage() {
   const { id } = useParams();
@@ -33,9 +35,6 @@ export default function EditProjectPage() {
     payments: [], // Thanh toán
   });
 
-  // =====================
-  // LOAD DATA
-  // =====================
   useEffect(() => {
     const fetchData = async () => {
       const project = await getOneProject(id as string);
@@ -54,20 +53,58 @@ export default function EditProjectPage() {
     fetchData();
   }, [id]);
 
-  // =====================
-  // HANDLE INPUT CHANGE
-  // =====================
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // =====================
-  // SAVE TO FIRESTORE
-  // =====================
   const handleSave = async () => {
     await updateProject(id as string, { ...form });
     alert("Cập nhật thành công!");
     router.push("/project");
+  };
+
+  const exportExcel = (form: any) => {
+    const XLSX = require("xlsx");
+    const { saveAs } = require("file-saver");
+
+    // Dòng thông tin chính
+    const mainData = [
+      {
+        "Tên dự án": form.name,
+        "Chủ đầu tư": form.investor,
+        "Địa chỉ": form.address,
+        "Ngày bắt đầu": form.start_date,
+        "Ngày kết thúc": form.end_date,
+        "Thời gian xây dựng": form.construction_time,
+      },
+    ];
+
+    const maxRows = Math.max(
+      form.advance_payments?.length || 0,
+      form.payments?.length || 0
+    );
+
+    const financeData = [];
+
+    for (let i = 0; i < maxRows; i++) {
+      financeData.push({
+        "Ứng tiền": form.advance_payments?.[i]?.amount || "",
+        "Ngày ứng tiền": form.advance_payments?.[i]?.date || "",
+        "Thanh toán": form.payments?.[i]?.amount || "",
+        "Ngày thanh toán": form.payments?.[i]?.date || "",
+      });
+    }
+
+    // Kết hợp dữ liệu
+    const worksheetData = [...mainData, {}, ...financeData];
+
+    const ws = XLSX.utils.json_to_sheet(worksheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Dự án");
+
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, `${form.name || "project"}.xlsx`);
   };
 
   if (loading)
@@ -78,7 +115,7 @@ export default function EditProjectPage() {
     );
 
   return (
-    <Box maxWidth={1100} mx="auto" mt={4}>
+    <Box maxWidth={1100} mx="auto" mt={4} p={5}>
       <Box display="flex" gap={2} mb={3} alignItems="center">
         <Link href="/project">
           <IconButton color="primary">
@@ -86,6 +123,14 @@ export default function EditProjectPage() {
           </IconButton>
         </Link>
         <Typography variant="h5">Sửa dự án</Typography>
+        <Button
+          variant="contained"
+          color="success"
+          sx={{ ml: "auto" }}
+          onClick={() => exportExcel(form)}
+        >
+          Xuất Excel
+        </Button>
       </Box>
 
       <Box display="flex" flexDirection="column" gap={2}>
@@ -161,7 +206,7 @@ export default function EditProjectPage() {
           </Box>
 
           <Box width={"50%"}>
-            <Box mt={3} p={2} border="1px solid #ccc" borderRadius={2}>
+            <Box p={2} border="1px solid #ccc" borderRadius={2}>
               <Typography fontWeight="bold" mb={1}>
                 Cảnh báo thu - chi
               </Typography>
@@ -202,35 +247,66 @@ export default function EditProjectPage() {
               })()}
             </Box>
 
-            <Box mt={3}>
+            <Box mt={2}>
               <Typography fontWeight="bold">Ứng tiền</Typography>
 
-              {form.advance_payments.map((item: any, index: number) => (
-                <Box key={index} display="flex" gap={2} mt={2}>
-                  <TextField
-                    label={`Số tiền lần ${index + 1}`}
-                    type="number"
-                    value={item.amount}
-                    onChange={(e) => {
-                      const updated = [...form.advance_payments];
-                      updated[index].amount = e.target.value;
-                      setForm({ ...form, advance_payments: updated });
-                    }}
-                  />
+              <Box
+                sx={{
+                  maxHeight: 300,
+                  overflowY: "auto",
+                  pr: 1,
+                  border: "1px solid #ddd",
+                  borderRadius: 2,
+                  p: 2,
+                }}
+              >
+                {form.advance_payments.map((item: any, index: number) => (
+                  <Box
+                    key={index}
+                    display="flex"
+                    gap={2}
+                    mt={2}
+                    alignItems="center"
+                  >
+                    <TextField
+                      label={`Số tiền lần ${index + 1}`}
+                      type="number"
+                      value={item.amount}
+                      onChange={(e) => {
+                        const updated = [...form.advance_payments];
+                        updated[index].amount = e.target.value;
+                        setForm({ ...form, advance_payments: updated });
+                      }}
+                    />
 
-                  <TextField
-                    label="Ngày"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                    value={item.date}
-                    onChange={(e) => {
-                      const updated = [...form.advance_payments];
-                      updated[index].date = e.target.value;
-                      setForm({ ...form, advance_payments: updated });
-                    }}
-                  />
-                </Box>
-              ))}
+                    <TextField
+                      label="Ngày"
+                      type="date"
+                      InputLabelProps={{ shrink: true }}
+                      value={item.date}
+                      onChange={(e) => {
+                        const updated = [...form.advance_payments];
+                        updated[index].date = e.target.value;
+                        setForm({ ...form, advance_payments: updated });
+                      }}
+                    />
+
+                    {/* NÚT XÓA */}
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={() => {
+                        const updated = form.advance_payments.filter(
+                          (_: any, i: number) => i !== index
+                        );
+                        setForm({ ...form, advance_payments: updated });
+                      }}
+                    >
+                      Xóa
+                    </Button>
+                  </Box>
+                ))}
+              </Box>
 
               <Button
                 variant="outlined"
@@ -249,35 +325,66 @@ export default function EditProjectPage() {
               </Button>
             </Box>
 
-            <Box mt={3}>
+            <Box mt={2}>
               <Typography fontWeight="bold">Thanh toán</Typography>
 
-              {form.payments.map((item: any, index: number) => (
-                <Box key={index} display="flex" gap={2} mt={2}>
-                  <TextField
-                    label={`Thanh toán lần ${index + 1}`}
-                    type="number"
-                    value={item.amount}
-                    onChange={(e) => {
-                      const updated = [...form.payments];
-                      updated[index].amount = e.target.value;
-                      setForm({ ...form, payments: updated });
-                    }}
-                  />
+              <Box
+                sx={{
+                  maxHeight: 300,
+                  overflowY: "auto",
+                  pr: 1,
+                  border: "1px solid #ddd",
+                  borderRadius: 2,
+                  p: 2,
+                }}
+              >
+                {form.payments.map((item: any, index: number) => (
+                  <Box
+                    key={index}
+                    display="flex"
+                    gap={2}
+                    mt={2}
+                    alignItems="center"
+                  >
+                    <TextField
+                      label={`Thanh toán lần ${index + 1}`}
+                      type="number"
+                      value={item.amount}
+                      onChange={(e) => {
+                        const updated = [...form.payments];
+                        updated[index].amount = e.target.value;
+                        setForm({ ...form, payments: updated });
+                      }}
+                    />
 
-                  <TextField
-                    label="Ngày"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                    value={item.date}
-                    onChange={(e) => {
-                      const updated = [...form.payments];
-                      updated[index].date = e.target.value;
-                      setForm({ ...form, payments: updated });
-                    }}
-                  />
-                </Box>
-              ))}
+                    <TextField
+                      label="Ngày"
+                      type="date"
+                      InputLabelProps={{ shrink: true }}
+                      value={item.date}
+                      onChange={(e) => {
+                        const updated = [...form.payments];
+                        updated[index].date = e.target.value;
+                        setForm({ ...form, payments: updated });
+                      }}
+                    />
+
+                    {/* NÚT XÓA */}
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={() => {
+                        const updated = form.payments.filter(
+                          (_: any, i: number) => i !== index
+                        );
+                        setForm({ ...form, payments: updated });
+                      }}
+                    >
+                      Xóa
+                    </Button>
+                  </Box>
+                ))}
+              </Box>
 
               <Button
                 variant="outlined"
@@ -294,10 +401,6 @@ export default function EditProjectPage() {
             </Box>
           </Box>
         </Box>
-
-        {/* ===========================
-            SAVE BUTTON
-        =========================== */}
         <Button variant="contained" onClick={handleSave}>
           Lưu thay đổi
         </Button>
