@@ -14,8 +14,6 @@ import { updateProject } from "@/lib/updateProject";
 import Link from "next/link";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { IconButton } from "@mui/material";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 
 export default function EditProjectPage() {
   const { id } = useParams();

@@ -4,8 +4,11 @@ import { useState } from "react";
 import { TextField, Button, Box, Typography } from "@mui/material";
 import { createProject } from "@/lib/projectActions";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function NewProjectPage() {
+  const router = useRouter();
+
   const [form, setForm] = useState({
     name: "",
     investor: "",
@@ -81,6 +84,7 @@ export default function NewProjectPage() {
       construction_time: "",
     });
     setImages([]);
+    router.push("/project");
   };
 
   return (
