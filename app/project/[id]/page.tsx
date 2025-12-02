@@ -161,9 +161,6 @@ export default function EditProjectPage() {
           </Box>
 
           <Box width={"50%"}>
-            {/* ===========================
-    CẢNH BÁO TỔNG THU - CHI
-=========================== */}
             <Box mt={3} p={2} border="1px solid #ccc" borderRadius={2}>
               <Typography fontWeight="bold" mb={1}>
                 Cảnh báo thu - chi
@@ -204,9 +201,7 @@ export default function EditProjectPage() {
                 );
               })()}
             </Box>
-            {/* ===========================
-            ỨNG TIỀN
-        =========================== */}
+
             <Box mt={3}>
               <Typography fontWeight="bold">Ứng tiền</Typography>
 
@@ -254,9 +249,6 @@ export default function EditProjectPage() {
               </Button>
             </Box>
 
-            {/* ===========================
-            THANH TOÁN
-        =========================== */}
             <Box mt={3}>
               <Typography fontWeight="bold">Thanh toán</Typography>
 
