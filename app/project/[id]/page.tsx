@@ -35,7 +35,7 @@ export default function EditProjectPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const project = await getOneProject(id as string);
+      const project:any = await getOneProject(id as string);
 
       if (project) {
         setForm({
